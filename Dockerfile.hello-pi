@@ -8,9 +8,6 @@ COPY ./CMakeLists.txt /code/
 ENV BIN_DIR /tmp/bin
 ENV BUILD_DIR /code/build
 
-# RUN ls -lah $CROSS_INSTALL_PREFIX/opt/vc/include/interface/vmcs_host
-# RUN cat $CROSS_INSTALL_PREFIX/opt/vc/include/interface/vmcs_host/vc_vchi_gencmd.h
-
 RUN mkdir -p $BIN_DIR && \
   mkdir -p $BUILD_DIR && \
   cd $BUILD_DIR && \
