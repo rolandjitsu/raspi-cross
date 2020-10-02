@@ -1,0 +1,13 @@
+# syntax = docker/dockerfile:1.1-experimental
+# NOTE: `sudo` don't work here!
+FROM cross-stretch AS builder
+
+COPY ./hello.cpp /code/
+
+ENV BIN_DIR /tmp/bin
+
+RUN mkdir -p $BIN_DIR && \
+  $CXX_COMPILER_ARM_LINUX /code/hello.cpp -Ofast -Wall -o $BIN_DIR/hello
+
+FROM scratch
+COPY --from=builder /tmp/bin /

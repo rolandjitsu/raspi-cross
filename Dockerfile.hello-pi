@@ -1,0 +1,24 @@
+# syntax = docker/dockerfile:1.1-experimental
+# NOTE: `sudo` don't work here!
+FROM cross-pi AS builder
+
+COPY ./hello-pi.c /code/
+COPY ./CMakeLists.txt /code/
+
+ENV BIN_DIR /tmp/bin
+ENV BUILD_DIR /code/build
+
+# RUN ls -lah $CROSS_INSTALL_PREFIX/opt/vc/include/interface/vmcs_host
+# RUN cat $CROSS_INSTALL_PREFIX/opt/vc/include/interface/vmcs_host/vc_vchi_gencmd.h
+
+RUN mkdir -p $BIN_DIR && \
+  mkdir -p $BUILD_DIR && \
+  cd $BUILD_DIR && \
+  cmake -DCMAKE_TOOLCHAIN_FILE=$CROSS_TOOLCHAIN \
+    -DCMAKE_INSTALL_PREFIX=$CROSS_INSTALL_PREFIX \
+    ..  && \
+  make -j `nproc` && \
+  cp ./hello-pi $BIN_DIR/
+
+FROM scratch
+COPY --from=builder /tmp/bin /
