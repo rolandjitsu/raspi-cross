@@ -1,6 +1,8 @@
 # Raspi Cross
 > Cross-compile for Raspberry Pi with Docker.
 
+[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/rolandjitsu/raspi-cross/Test?label=tests&style=flat-square)](https://github.com/rolandjitsu/raspi-cross/actions?query=workflow%3ATest)
+
 ## Prerequisites
 Install the following tools:
 * [Docker](https://docs.docker.com/engine) >= `19.03.13`

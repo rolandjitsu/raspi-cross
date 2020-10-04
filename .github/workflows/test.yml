@@ -1,0 +1,32 @@
+name: Test
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Enable experimental features for the Docker CLI
+        run: |
+          mkdir -p ~/.docker
+          echo $'{\n  "experimental": "enabled"\n}' | sudo tee ~/.docker/config.json
+          sudo service docker restart
+          docker version -f '{{.Client.Experimental}}'
+          docker buildx version
+      - uses: actions/checkout@v2
+      - name: Build the base image
+        run: docker buildx bake cross-stretch
+      - name: Build the base image w/ goodies
+        run: docker buildx bake cross-pi
+      - name: Compile the binaries
+        run: docker buildx bake
+      - name: Verify the binaries
+        run: |
+          if ! test -f "./bin/hello" || ! test -f "./bin/hello-pi"; then
+            echo "Binaries not found"
+            exit 1
+          fi
