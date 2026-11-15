@@ -3,30 +3,87 @@ on:
   push:
     branches:
       - master
+      - main
   pull_request:
     types: [opened, synchronize]
 
 jobs:
-  build:
-    runs-on: ubuntu-18.04
+  lint:
+    runs-on: ubuntu-24.04
     steps:
-      - name: Enable experimental features for the Docker CLI
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check spelling with typos
+        uses: crate-ci/typos@v1
+
+      - name: Check C and C++ formatting
         run: |
-          mkdir -p ~/.docker
-          echo $'{\n  "experimental": "enabled"\n}' | sudo tee ~/.docker/config.json
-          sudo service docker restart
-          docker version -f '{{.Client.Experimental}}'
-          docker buildx version
-      - uses: actions/checkout@v2
-      - name: Build the base image
-        run: docker buildx bake cross-stretch
-      - name: Build the base image w/ goodies
-        run: docker buildx bake cross-pi
+          sudo apt-get update && \
+          sudo apt-get install -y --no-install-recommends clang-format
+          clang-format --dry-run --Werror hello.cpp hello-pi.c
+
+      - name: Check Markdown and JSON formatting
+        uses: dprint/check@v2.2
+
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Setup deps
+        run: |
+          sudo apt-get update && \
+          sudo apt-get install -y \
+            file \
+            gcc-arm-linux-gnueabihf \
+            libc6-dev-armhf-cross \
+            qemu-user
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows
+      - name: Cache Docker
+        uses: actions/cache@v4
+        env:
+          cache-name: docker-cache
+        with:
+          path: /tmp/cache
+          key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('CMakeLists.txt', 'Dockerfile', 'arm.toolchain.cmake', 'hello.cpp', 'hello-pi.c') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ env.cache-name }}-
+            ${{ runner.os }}-
+
       - name: Compile the binaries
-        run: docker buildx bake
+        env:
+          BUILDX_BAKE_ENTITLEMENTS_FS: "0"
+          CACHE: /tmp/cache
+        run: docker buildx bake --allow=fs=/tmp
+
       - name: Verify the binaries
         run: |
+          unset LD_LIBRARY_PATH
+
+          # Verify binaries exist
           if ! test -f "./bin/hello" || ! test -f "./bin/hello-pi"; then
-            echo "Binaries not found"
+            echo "Binaries not found in ./bin"
+            exit 1
+          fi
+
+          # Verify ELF architectures with file utility
+          file ./bin/hello | grep -E "ARM.*(executable|shared object)"
+          file ./bin/hello-pi | grep -E "ARM.*(executable|shared object)"
+
+          # Test hello execution with QEMU
+          # Model file won't exist on host, so hello prints empty string and exits 0
+          qemu-arm -L /usr/arm-linux-gnueabihf/ ./bin/hello
+
+          # Verify dynamic linking and execution of hello-pi with QEMU
+          # hello-pi prints board info and reports VCHI init failure when /dev/vchiq is absent
+          out=$(qemu-arm -L /usr/arm-linux-gnueabihf/ ./bin/hello-pi 2>&1 || true)
+          echo "$out"
+          if ! echo "$out" | grep -q "Raspberry Pi:"; then
+            echo "Unexpected hello-pi output under QEMU"
             exit 1
           fi
