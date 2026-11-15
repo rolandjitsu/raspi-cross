@@ -1,8 +1,7 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 
-int main()
-{
+int main() {
   std::string m;
   std::ifstream stream("/sys/firmware/devicetree/base/model");
   std::getline(stream, m);
