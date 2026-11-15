@@ -1,35 +1,83 @@
-variable "STRETCH_TAG" {
-	default = "latest"
-}
-
-variable "PI_TAG" {
-	default = "latest"
-}
-
 variable "DEST" {
-	default = "./bin"
+  default = "./bin"
 }
 
-target "cross-stretch" {
-	dockerfile = "Dockerfile.cross"
-	tags = ["cross-stretch:${STRETCH_TAG}"]
+variable "CACHE" {
+  default = "./tmp/cache"
 }
 
-target "cross-pi" {
-	dockerfile = "Dockerfile.cross-pi"
-	tags = ["cross-pi:${PI_TAG}"]
+variable "GNU_HOST" {
+  default = "arm-linux-gnueabihf"
+}
+
+variable "DEBIAN_VERSION" {
+  default = "bookworm-slim"
 }
 
 group "default" {
-	targets = ["hello", "hello-pi"]
+  targets = ["default"]
+}
+
+group "all" {
+  targets = ["hello", "hello-pi"]
+}
+
+target "cross-base" {
+  dockerfile = "Dockerfile"
+  target     = "cross-base"
+  tags       = ["cross-base:latest"]
+  cache-from = ["type=local,src=${CACHE}-base"]
+  cache-to   = ["type=local,mode=max,dest=${CACHE}-base"]
+  args = {
+    DEBIAN_VERSION = "${DEBIAN_VERSION}"
+    GNU_HOST       = "${GNU_HOST}"
+  }
+}
+
+target "cross-pi" {
+  dockerfile = "Dockerfile"
+  target     = "cross-pi"
+  tags       = ["cross-pi:latest"]
+  cache-from = ["type=local,src=${CACHE}-pi"]
+  cache-to   = ["type=local,mode=max,dest=${CACHE}-pi"]
+  args = {
+    DEBIAN_VERSION = "${DEBIAN_VERSION}"
+    GNU_HOST       = "${GNU_HOST}"
+  }
+}
+
+target "default" {
+  dockerfile = "Dockerfile"
+  target     = "default"
+  cache-from = ["type=local,src=${CACHE}"]
+  cache-to   = ["type=local,mode=max,dest=${CACHE}"]
+  output     = ["${DEST}"]
+  args = {
+    DEBIAN_VERSION = "${DEBIAN_VERSION}"
+    GNU_HOST       = "${GNU_HOST}"
+  }
 }
 
 target "hello" {
-	dockerfile = "Dockerfile.hello"
-	output = ["${DEST}"]
+  dockerfile = "Dockerfile"
+  target     = "export-hello"
+  cache-from = ["type=local,src=${CACHE}-hello"]
+  cache-to   = ["type=local,mode=max,dest=${CACHE}-hello"]
+  output     = ["${DEST}"]
+  args = {
+    DEBIAN_VERSION = "${DEBIAN_VERSION}"
+    GNU_HOST       = "${GNU_HOST}"
+  }
 }
 
 target "hello-pi" {
-	dockerfile = "Dockerfile.hello-pi"
-	output = ["${DEST}"]
+  dockerfile = "Dockerfile"
+  target     = "export-hello-pi"
+  cache-from = ["type=local,src=${CACHE}-hello-pi"]
+  cache-to   = ["type=local,mode=max,dest=${CACHE}-hello-pi"]
+  output     = ["${DEST}"]
+  args = {
+    DEBIAN_VERSION = "${DEBIAN_VERSION}"
+    GNU_HOST       = "${GNU_HOST}"
+  }
 }

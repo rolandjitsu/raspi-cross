@@ -1,13 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(hello-pi)
+project(hello-pi C CXX)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_INSTALL_PREFIX}/lib/cmake/ /usr/lib/cmake)
 set(VC_INST_PATH ${CMAKE_PREFIX_PATH}/opt/vc)
 set(VC_LIBS ${VC_INST_PATH}/lib)
 set(VC_INCLUDES ${VC_INST_PATH}/include)
 set(VCOS_PLATFORM pthreads)
-add_definitions(-Wall -Werror)
 
 find_library(mmalcore_LIBS NAMES mmal_core PATHS "${VC_LIBS}")
 find_library(mmalutil_LIBS NAMES mmal_util PATHS "${VC_LIBS}")
@@ -33,15 +32,23 @@ if(NOT wiringPi_LIB)
   message(FATAL_ERROR "Could not find wiringPi")
 endif()
 
-include_directories(${VC_INCLUDES}
-  ${VC_INCLUDES}/interface/vcos
-  ${VC_INCLUDES}/interface/vcos/${VCOS_PLATFORM})
+# Target: hello (standard C++ Raspberry Pi model reader)
+add_executable(hello hello.cpp)
+target_compile_features(hello PRIVATE cxx_std_17)
+target_compile_options(hello PRIVATE -Wall -Werror -Ofast)
 
+# Target: hello-pi (C application using Broadcom VideoCore and WiringPi)
 add_executable(hello-pi hello-pi.c)
-target_link_libraries(hello-pi
-  optimized
+target_compile_options(hello-pi PRIVATE -Wall -Werror)
+target_include_directories(hello-pi PRIVATE
+  ${VC_INCLUDES}
+  ${VC_INCLUDES}/interface/vcos
+  ${VC_INCLUDES}/interface/vcos/${VCOS_PLATFORM}
+)
+target_link_libraries(hello-pi PRIVATE
   pthread
   ${vcos_LIBS}
   ${vchiq_arm_LIBS}
   ${vchostif_LIBS}
-  wiringPi)
+  ${wiringPi_LIB}
+)
