@@ -2,36 +2,22 @@
 
 > Cross-compile for Raspberry Pi with Docker.
 
-[![GitHub Workflow Status](https://img.shields.io/github/workflow/status/rolandjitsu/raspi-cross/Test?label=tests&style=flat-square)](https://github.com/rolandjitsu/raspi-cross/actions?query=workflow%3ATest)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/rolandjitsu/raspi-cross/test.yml?branch=main&label=tests&style=flat-square)](https://github.com/rolandjitsu/raspi-cross/actions?query=workflow%3ATest)
 
 ## Prerequisites
 
 Install the following tools:
 
-- [Docker](https://docs.docker.com/engine) >= `19.03.13`
-- [buildx](https://github.com/docker/buildx#installing) >= `v0.4.1`
+- [Docker](https://docs.docker.com/engine) >= `20.10.0`
+- [buildx](https://github.com/docker/buildx#installing) >= `v0.8.0`
 
 ## Setup Docker
 
-Check current builder instances:
+Create a Docker builder instance if you don't already have one:
 
 ```bash
-docker buildx ls
+docker buildx create --name my-builder --driver docker-container --use
 ```
-
-If you see an instance that uses the `docker` driver, switch to it (it's usually the `default`):
-
-```
-docker buildx use <instance name>
-```
-
-Otherwise, create a builder:
-
-```bash
-docker buildx create --name my-builder --driver docker --use
-```
-
-**NOTE**: You cannot create more than one instance using the `docker` driver.
 
 Then inspect and bootstrap it:
 
@@ -39,65 +25,68 @@ Then inspect and bootstrap it:
 docker buildx inspect --bootstrap
 ```
 
-## Setup Base Images
-
-Prepare the base cross-compilation image:
-
-```bash
-docker buildx build -f Dockerfile.cross --tag cross-stretch .
-```
-
-**NOTE**: By default, the image is going to be available to use on the host as `cross-stretch`. If `docker images` doesn't show it, add the `--load` flag when building.
-
-_P.S._ To bust the cache, use `--no-cache`.
-
-Prepare the base image w/ some common libs usually available on the Pi:
-
-```bash
-docker buildx build -f Dockerfile.cross-pi --tag cross-pi .
-```
-
 ## Compile
 
-Compile the `hello` binary:
+### Using Docker Buildx Bake (Recommended)
 
-```bash
-docker buildx build -f Dockerfile.hello -o type=local,dest=./bin .
-```
-
-Compile the `hello-pi` binary:
-
-```bash
-docker buildx build -f Dockerfile.hello-pi -o type=local,dest=./bin .
-```
-
-## Bake
-
-To make things easier, you can use the [bake](https://github.com/docker/buildx#buildx-bake-options-target) command.
-
-To setup the base image:
-
-```bash
-docker buildx bake cross-stretch
-```
-
-To setup the base image w/ goodies:
-
-```bash
-docker buildx bake cross-pi
-```
-
-To compile the binaries:
+To compile both the `hello` and `hello-pi` binaries into `./bin`:
 
 ```bash
 docker buildx bake
 ```
 
-_P.S._ To bust the cache, you can use `--no-cache`.
+To compile only `hello`:
+
+```bash
+docker buildx bake hello
+```
+
+To compile only `hello-pi`:
+
+```bash
+docker buildx bake hello-pi
+```
+
+To bust the cache, add the `--no-cache` flag:
+
+```bash
+docker buildx bake --no-cache
+```
+
+### Using Docker Buildx directly
+
+To compile the binaries with Buildx directly:
+
+```bash
+docker buildx build -f Dockerfile -o type=local,dest=./bin .
+```
+
+## Base Images
+
+If you want to build or inspect the base cross-compilation images:
+
+```bash
+# Prepare the base cross-compilation image
+docker buildx bake cross-base
+
+# Prepare the base image with Raspberry Pi userland and WiringPi
+docker buildx bake cross-pi
+```
+
+## Verifying Binaries
+
+On Linux systems with QEMU user emulation installed (`qemu-user` and `libc6-dev-armhf-cross`):
+
+```bash
+# Test hello
+qemu-arm -L /usr/arm-linux-gnueabihf/ ./bin/hello
+
+# Test hello-pi
+qemu-arm -L /usr/arm-linux-gnueabihf/ ./bin/hello-pi
+```
 
 ## Learning Material
 
 - [Docker Buildx](https://docs.docker.com/buildx/working-with-buildx/)
 - [Getting started with Docker for ARM on Linux](https://www.docker.com/blog/getting-started-with-docker-for-arm-on-linux/)
-- [Leverage multi-CPU Architectures](https://docs.docker.com/docker-for-mac/multi-arch/)
 - [Best practices for writing Dockerfiles](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/)
