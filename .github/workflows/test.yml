@@ -35,6 +35,7 @@ jobs:
           sudo apt-get install -y \
             file \
             gcc-arm-linux-gnueabihf \
+            g++-arm-linux-gnueabihf \
             libc6-dev-armhf-cross \
             qemu-user
       - name: Checkout repository
@@ -72,8 +73,10 @@ jobs:
           fi
 
           # Verify ELF architectures with file utility
-          file ./bin/hello | grep -E "ARM.*(executable|shared object)"
-          file ./bin/hello-pi | grep -E "ARM.*(executable|shared object)"
+          file ./bin/hello
+          file ./bin/hello-pi
+          file ./bin/hello | grep "ELF 32-bit" | grep "ARM"
+          file ./bin/hello-pi | grep "ELF 32-bit" | grep "ARM"
 
           # Test hello execution with QEMU
           # Model file won't exist on host, so hello prints empty string and exits 0
