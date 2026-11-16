@@ -18,6 +18,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     sed -i 's|security.debian.org|archive.debian.org|g' /etc/apt/sources.list && \
     echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99archive; \
   fi && \
+  dpkg --add-architecture armhf && \
   apt-get update && \
   apt-get --no-install-recommends install -y \
     autoconf \
@@ -31,9 +32,14 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     git \
     gnupg \
     libc6-dev-armhf-cross \
+    libcrypt-dev:armhf \
     libssl-dev \
     pkg-config \
-    wget
+    wget && \
+  if [ -f /usr/lib/${GNU_HOST}/libcrypt.so ] && [ ! -f ${CROSS_INSTALL_PREFIX}/lib/libcrypt.so ]; then \
+    mkdir -p ${CROSS_INSTALL_PREFIX}/lib && \
+    ln -sf /usr/lib/${GNU_HOST}/libcrypt.so ${CROSS_INSTALL_PREFIX}/lib/libcrypt.so; \
+  fi
 
 COPY ./arm.toolchain.cmake /usr/local/share/cmake/arm.toolchain.cmake
 
@@ -66,7 +72,7 @@ RUN RPI_DIR=/raspberrypi && \
   cd $WPI_DIR && \
   git checkout $WIRINGPI_SHA && \
   cd $WPI_WIRING_PI_DIR && \
-  CC=$C_COMPILER_ARM_LINUX make -j `nproc` && \
+  CC=$C_COMPILER_ARM_LINUX EXTRA_CFLAGS="-fcommon" make -j `nproc` LIBS="-L/usr/lib/$GNU_HOST -L$CROSS_INSTALL_PREFIX/lib -lm -lpthread -lrt -lcrypt" && \
   make install DESTDIR=$CROSS_INSTALL_PREFIX PREFIX="" && \
   cd / && \
   rm -rf $WPI_DIR

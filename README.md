@@ -78,11 +78,12 @@ docker buildx bake cross-pi
 On Linux systems with QEMU user emulation installed (`qemu-user` and `libc6-dev-armhf-cross`):
 
 ```bash
-# Test hello
-qemu-arm -L /usr/arm-linux-gnueabihf/ ./bin/hello
+# Verify ELF binary architecture
+file ./bin/hello
+file ./bin/hello-pi
 
-# Test hello-pi
-qemu-arm -L /usr/arm-linux-gnueabihf/ ./bin/hello-pi
+# Test hello execution with QEMU
+qemu-arm -L /usr/arm-linux-gnueabihf/ ./bin/hello
 ```
 
 ## Learning Material

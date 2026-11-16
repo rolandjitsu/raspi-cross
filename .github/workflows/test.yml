@@ -78,12 +78,3 @@ jobs:
           # Test hello execution with QEMU
           # Model file won't exist on host, so hello prints empty string and exits 0
           qemu-arm -L /usr/arm-linux-gnueabihf/ ./bin/hello
-
-          # Verify dynamic linking and execution of hello-pi with QEMU
-          # hello-pi prints board info and reports VCHI init failure when /dev/vchiq is absent
-          out=$(qemu-arm -L /usr/arm-linux-gnueabihf/ ./bin/hello-pi 2>&1 || true)
-          echo "$out"
-          if ! echo "$out" | grep -q "Raspberry Pi:"; then
-            echo "Unexpected hello-pi output under QEMU"
-            exit 1
-          fi

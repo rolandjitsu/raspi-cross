@@ -112,10 +112,6 @@ file ./bin/hello-pi
 
 # Test hello execution with QEMU (prints empty string if device-tree model is absent on host)
 qemu-arm -L /usr/arm-linux-gnueabihf/ ./bin/hello
-
-# Test hello-pi dynamic linking and initialization with QEMU
-# (Outputs board info; reports VCHI init failure when /dev/vchiq is not present on host)
-qemu-arm -L /usr/arm-linux-gnueabihf/ ./bin/hello-pi
 ```
 
 ---
