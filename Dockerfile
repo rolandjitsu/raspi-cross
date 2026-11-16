@@ -72,6 +72,7 @@ RUN RPI_DIR=/raspberrypi && \
   cd $WPI_DIR && \
   git checkout $WIRINGPI_SHA && \
   cd $WPI_WIRING_PI_DIR && \
+  sed -i 's/\$(LIBS) \$(OBJ)/\$(OBJ) \$(LIBS)/' Makefile && \
   CC=$C_COMPILER_ARM_LINUX EXTRA_CFLAGS="-fcommon" make -j `nproc` LIBS="-L/usr/lib/$GNU_HOST -L$CROSS_INSTALL_PREFIX/lib -lm -lpthread -lrt -lcrypt" && \
   make install DESTDIR=$CROSS_INSTALL_PREFIX PREFIX="" && \
   cd / && \

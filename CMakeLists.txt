@@ -32,6 +32,16 @@ if(NOT wiringPi_LIB)
   message(FATAL_ERROR "Could not find wiringPi")
 endif()
 
+find_library(crypt_LIB NAMES crypt)
+if(NOT crypt_LIB)
+  set(crypt_LIB crypt)
+endif()
+
+find_library(m_LIB NAMES m)
+if(NOT m_LIB)
+  set(m_LIB m)
+endif()
+
 # Target: hello (standard C++ Raspberry Pi model reader)
 add_executable(hello hello.cpp)
 target_compile_features(hello PRIVATE cxx_std_17)
@@ -47,6 +57,8 @@ target_include_directories(hello-pi PRIVATE
 )
 target_link_libraries(hello-pi PRIVATE
   pthread
+  ${m_LIB}
+  ${crypt_LIB}
   ${vcos_LIBS}
   ${vchiq_arm_LIBS}
   ${vchostif_LIBS}
